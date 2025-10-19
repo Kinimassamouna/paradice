@@ -2,42 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 import 'dicepool.dart'; // <-- on importe tes classes métiers
 
-//
-// 🎲 --- Partie 1 : Classes métiers (POO) ---
-//
-
-abstract class Dice {
-  final int sides;
-  final Random _random = Random();
-
-  Dice(this.sides);
-
-  int roll() => _random.nextInt(sides) + 1;
-
-  List<int> rollMultiple(int count) {
-    return List.generate(count, (_) => roll());
-  }
-}
-
-class Dice6 extends Dice {
-  Dice6() : super(6);
-}
-
-class Dice10 extends Dice {
-  Dice10() : super(10);
-}
-
-class Dice20 extends Dice {
-  Dice20() : super(20);
-}
-
-class Dice100 extends Dice {
-  Dice100() : super(100);
-}
-
-//
 // 🎨 --- Partie 2 : Interface Flutter (UI) ---
-// 
 
 class DicePage extends StatefulWidget {
   const DicePage({super.key});
@@ -69,6 +34,9 @@ class _DicePageState extends State<DicePage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
 
+    // Initialisation obligatoire pour éviter les erreurs
+    dice = DicePool6();
+
     // Rotation du logo
     _rotateController = AnimationController(
       duration: const Duration(milliseconds: 700),
@@ -78,13 +46,13 @@ class _DicePageState extends State<DicePage> with TickerProviderStateMixin {
       CurvedAnimation(parent: _rotateController, curve: Curves.easeInOut),
     );
 
-    // Animation du bouton
+    // 🎛 Animation du bouton (scale)
     _buttonController = AnimationController(
-      duration: const Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _buttonAnimation = Tween<double>(begin: 1, end: 1.2).animate(
-      CurvedAnimation(parent: _buttonController, curve: Curves.easeOut),
+    _buttonAnimation = Tween<double>(begin: 0.8, end: 1.2).animate(
+      CurvedAnimation(parent: _buttonController, curve: Curves.easeInOut),
     );
     _buttonController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
@@ -92,7 +60,7 @@ class _DicePageState extends State<DicePage> with TickerProviderStateMixin {
       }
     });
 
-    // Tremblement du logo
+    // 🌪 Tremblement du logo
     _shakeController = AnimationController(
       duration: const Duration(milliseconds: 700),
       vsync: this,
@@ -163,7 +131,6 @@ class _DicePageState extends State<DicePage> with TickerProviderStateMixin {
     setState(() => isRolling = false);
   }
 
-
   @override
   Widget build(BuildContext context) {
     Map<int, int> resultCount = {};
@@ -173,16 +140,22 @@ class _DicePageState extends State<DicePage> with TickerProviderStateMixin {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Statistiques'),
+        title: const Text(
+          'Statistiques',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.green,
       ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              AnimatedBuilder(
-                animation: Listenable.merge([_rotateAnimation, _shakeAnimation]),
+        child: Column(
+          children: [
+            // Zone logo avec fond vert
+            Container(
+              width: double.infinity,
+              color: Colors.green, // même couleur que l'AppBar
+              padding: const EdgeInsets.all(16),
+              child: AnimatedBuilder(
+                animation: Listenable.merge([_rotateController, _shakeController]),
                 builder: (context, child) {
                   return Transform.translate(
                     offset: Offset(isRolling ? _shakeAnimation.value : 0, 0),
@@ -190,82 +163,80 @@ class _DicePageState extends State<DicePage> with TickerProviderStateMixin {
                       angle: isRolling ? _rotateAnimation.value : 0,
                       child: Image.asset(
                         'assets/images/paradice_logo.png',
-                        height: 120,
+                        height: 180,
                       ),
                     ),
                   );
                 },
               ),
+            ),
 
-              const SizedBox(height: 10),
+            const SizedBox(height: 10),
 
-              // Choix des dés
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  for (var sides in [6, 10, 20, 100])
-                    ElevatedButton(
-                      onPressed: () => changeDiceType(sides),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor:
-                            diceSides == sides ? Colors.green : const Color.fromARGB(255, 245, 196, 196),
-                        foregroundColor:
-                            diceSides == sides ? Colors.white : Colors.black,
-                      ),
-                      child: Text("D$sides"),
+            // Choix des dés
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                for (var sides in [6, 10, 20, 100])
+                  ElevatedButton(
+                    onPressed: () => changeDiceType(sides),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: diceSides == sides ? Colors.green : Colors.white,
+                      foregroundColor: diceSides == sides ? Colors.white : Colors.black,
                     ),
-                ],
-              ),
+                    child: Text("D$sides"),
+                  ),
+              ],
+            ),
 
-              const SizedBox(height: 10),
+            const SizedBox(height: 10),
 
-              // Ajustement du nombre de dés
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  for (var change in [-10, -1, 1, 10])
-                    ElevatedButton(
-                      onPressed: () => updateDiceCount(change),
-                      child: Text(
-                        change > 0 ? "+$change" : "$change",
-                        style: const TextStyle(fontSize: 16),
-                      ),
+            // Ajustement du nombre de dés
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                for (var change in [-10, -1, 1, 10])
+                  ElevatedButton(
+                    onPressed: () => updateDiceCount(change),
+                    child: Text(
+                      change > 0 ? "+$change" : "$change",
+                      style: const TextStyle(fontSize: 16),
                     ),
-                ],
-              ),
+                  ),
+              ],
+            ),
 
-              const SizedBox(height: 10),
+            const SizedBox(height: 10),
 
-              Text(
-                "Nombre de D$diceSides : $numberOfDice",
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
+            Text(
+              "Nombre de D$diceSides : $numberOfDice",
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
 
-              const SizedBox(height: 10),
+            const SizedBox(height: 10),
 
-              const Text(
-                "Les résultats :",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
+            const Text(
+              "Les résultats :",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
 
-              const SizedBox(height: 5),
+            const SizedBox(height: 5),
 
-              Wrap(
-                spacing: 20,
-                runSpacing: 4,
-                children: resultCount.entries.map((entry) {
-                  return Text("Nombre de ${entry.key} : ${entry.value}");
-                }).toList(),
-              ),
+            Wrap(
+              spacing: 20,
+              runSpacing: 4,
+              children: resultCount.entries.map((entry) {
+                return Text("Nombre de ${entry.key} : ${entry.value}");
+              }).toList(),
+            ),
 
-              const SizedBox(height: 15),
+            const SizedBox(height: 15),
 
-              Text(
-                "Moyenne obtenue : ${average.toStringAsFixed(2)}",
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
+            Text(
+              "Moyenne obtenue : ${average.toStringAsFixed(2)}",
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ),
+          ],
         ),
       ),
 
@@ -273,7 +244,7 @@ class _DicePageState extends State<DicePage> with TickerProviderStateMixin {
         scale: _buttonAnimation,
         child: FloatingActionButton(
           onPressed: isRolling ? null : rollDice,
-          backgroundColor: isRolling ? Colors.grey : Colors.green,
+          backgroundColor: isRolling ? const Color.fromARGB(255, 245, 196, 196) : Colors.green,
           child: const Icon(Icons.casino),
         ),
       ),

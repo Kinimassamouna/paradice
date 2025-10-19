@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
-import 'package:flutter_paradice/splash_screen.dart';
-import 'package:flutter_paradice/dice.dart';
+import 'package:flutter_paradice/splash_screen.dart'; // Import de l'écran de lancement
 
 
 
@@ -21,7 +19,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
-      home: const SplashScreen(), // <-- le splash screen s'affiche d'abord
+      home: const SplashScreen(), // L'écran affiché au lancement de l'application
     );
   }
 }
